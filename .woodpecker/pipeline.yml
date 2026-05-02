@@ -1,0 +1,45 @@
+when:
+  - event: push
+    branch: main
+
+steps:
+  sandbox-1:
+    image: python:3.13
+    environment:
+      WRENN_API_KEY:
+        from_secret: wrenn_api_key
+      GITEA_TOKEN:
+        from_secret: gitea_token
+    commands:
+      - pip install wrenn
+      - export GO_VERSION=$$(grep '^go ' go.mod | cut -d' ' -f2)
+      - python .woodpecker/scripts/build.py
+      - VERSION=$$(cat VERSION_CP)
+      - git config user.name "R3dRum92"
+      - git config user.email "tksadik@omukk.dev"
+      - git tag "v$${VERSION}"
+      - git push "https://tksadik92:$${GITEA_TOKEN}@git.omukk.dev/tksadik92/wrenn-releases.git" "v$${VERSION}"
+
+  sandbox-2:
+    image: python:3.13
+    environment:
+      WRENN_API_KEY:
+        from_secret: wrenn_api_key
+      GITEA_TOKEN:
+        from_secret: gitea_token
+      ZHIPU_API_KEY:
+        from_secret: zhipu_api_key
+    commands:
+      - pip install wrenn
+      - python .woodpecker/scripts/release_notes.py
+    depends_on: [sandbox-1]
+
+  sandbox-3:
+    image: python:3.13
+    environment:
+      GITHUB_TOKEN:
+        from_secret: github_token
+    commands:
+      - pip install httpx
+      - python .woodpecker/scripts/publish_github.py
+    depends_on: [sandbox-2]

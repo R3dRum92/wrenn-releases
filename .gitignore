@@ -49,3 +49,4 @@ frontend/build/
 internal/dashboard/static/*
 !internal/dashboard/static/.gitkeep.dual-graph/
 .dual-graph/
+__pycache__
